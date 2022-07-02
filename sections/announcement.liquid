@@ -1,0 +1,714 @@
+{% if section.blocks.size > 0 %}
+  {% assign position_top = '' %}
+  {% assign position_high = '' %}
+  {% assign position_low = '' %}
+
+  {% assign index_top = 0 %}
+  {% assign index_high = 0 %}
+  {% assign index_low = 0 %}
+
+  {% for block in section.blocks %}
+    {% assign index_group = '' %}
+    {% assign classes = '' %}
+    {% assign target_device_enable = false %}
+    {% assign color = '' %}
+
+    {% if section.settings.layout == 'slider' %}
+      {% assign classes = 'announcement__bar' %}
+    {% endif %}
+
+    {% if block.settings.target_device_enabled %}
+      {% assign target_device_enable = true %}
+    
+      {% if block.settings.target_device == 'mobile' %}
+        {% assign classes = classes | append: ' mobile' %}
+      {% endif %}
+    
+      {% if block.settings.target_device == 'desktop' %}
+        {% assign classes = classes | append: ' desktop' %}
+      {% endif %}
+    {% endif %}
+
+    {% if block.settings.enable %}  
+      {% if block.settings.trigger == 'top' %}
+        {% assign index_group = index_top %}
+        {% assign index_top = index_top | plus: 1 %}
+      {% endif %}
+
+      {% if block.settings.trigger == 'high' %}
+        {% assign index_group = index_high %}
+        {% assign index_high = index_high | plus: 1 %}
+      {% endif %}
+
+      {% if block.settings.trigger == 'low' %}
+        {% assign index_group = index_low %}
+        {% assign index_low = index_low | plus: 1 %}
+      {% endif %}
+    {% else %}
+      {% assign index_group = index_top %}
+      {% assign index_top = index_top | plus: 1 %}
+    {% endif %}
+
+    {% assign show_bar = true %}
+
+    {% if block.settings.target_url_enabled or block.settings.target_referrer_enabled %}  
+      {% assign show_bar = false %}        
+    {% endif %}
+
+    {% if block.settings.target_url_enabled and block.settings.target_url != blank %}  
+      {% if block.settings.target_url == request.path %}
+        {% assign show_bar = true %}
+      {% endif %}
+    {% endif %}
+    
+    {% if block.settings.target_referrer_enabled and block.settings.target_referrer != blank %}
+      {% capture target_refferer_attribute %}
+        data-target-refferer="{{ block.settings.target_referrer }}"
+      {% endcapture %}      
+
+      {% assign show_bar = true %}   
+    {% endif %}
+
+    {% if request.design_mode %}
+      {% assign show_bar = true %}
+    {% endif %}
+
+    {% capture block_attributes %}
+      data-slide="{{ block.id }}"
+      data-slide-index="{{ index_group }}"
+      data-block-id="{{ block.id }}"
+      {{ target_refferer_attribute }}
+      {% if target_device_enable %}
+        data-target-device="true"
+      {% endif %}
+      {% if classes != '' %}
+        class="{{ classes }}"
+      {% endif %}
+      {{ block.shopify_attributes }}
+    {% endcapture %}
+
+    {% if show_bar %}  
+      {% capture bar_html %}
+        {% case block.type %}
+          {% when 'text' %}
+            {% if block.settings.text != blank %}
+              {% if section.settings.layout == 'slider' %}
+                <div {{ block_attributes }}>
+                  <div data-ticker-frame class="announcement__message">
+                    <div data-ticker-scale class="ticker--unloaded announcement__scale">
+                      <div data-ticker-text class="announcement__text">
+                        <span>{{ block.settings.text | replace: '|', '<span class="announcement__divider"></span>' }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>  
+              {% endif %}
+              
+              {% if section.settings.layout == 'marquee' %}
+                <div {{ block_attributes }}>
+                  <span>{{ block.settings.text | replace: '|', '<span class="announcement__divider"></span>' }}</span>
+                </div>
+              {% endif %}
+            {% endif %}
+            
+          {% when 'message' %}
+            {% if block.settings.message %}  
+              {% if section.settings.layout == 'slider' %}  
+                <div {{ block_attributes }}>
+                  <div data-ticker-frame class="announcement__message">
+                    <div data-ticker-scale class="ticker--unloaded announcement__scale">
+                      <div data-ticker-text class="announcement__text">
+                        {% assign free_shipping_text = block.settings.message | default: settings.message %}
+{% assign is_enable = false %}
+{% assign show_wheel = true %}
+
+{% if block.settings.show_wheel == false %}
+  {% assign show_wheel = false %}
+{% endif %}
+
+{% if block.settings.message != blank %}
+  {% assign is_enable = true %}
+{% endif %}
+
+{% if settings.show_free_shipping_message and settings.free_shipping_limit != blank and free_shipping_text != blank %}
+  {% assign is_enable = true %}
+{% endif %}
+
+{% if is_enable %}
+  {% assign limit = settings.free_shipping_limit | plus: 0 %}
+  {% assign limit_currency = limit | times: 100 %}
+  {% assign subtotal_without_currency = cart.total_price | plus: 0 | divided_by: 100 %}
+
+  {% capture left_to_spend %}
+    <span data-left-to-spend>{{ limit_currency | minus: cart.total_price | money_without_trailing_zeros }}</span>
+  {% endcapture %}
+
+  {% assign free_shipping_message = free_shipping_text | replace: '{{ amount }}', left_to_spend %}
+  {% assign qualified_shipping_message = 'cart.general.qualified_shipping_message' | t %}
+  {% assign class_message = '' %}
+
+  {% if subtotal_without_currency >= limit %}
+    {% if qualified_shipping_message != blank %}
+      {% assign class_message = 'is-success' %}
+    {% else %}
+      {% assign class_message = 'is-hidden' %}
+    {% endif %}
+  {% elsif subtotal_without_currency == 0 %}
+    {% assign class_message = 'is-hidden' %}
+  {% endif %}
+
+  <p class="cart-dropdown__message cart__message {{ class_message }}" {{ block_attibutes }} data-cart-message="{% if qualified_shipping_message != blank %}true{% else %}false{% endif %}" data-limit="{{ limit }}">
+    {% if show_wheel %}  
+      {% assign percent = limit | minus: subtotal_without_currency | times: 100 | divided_by: limit %}
+      {% assign percent = 100 | minus: percent %}
+
+      {% if percent > 100 %}
+        {% assign percent = 100 %}
+      {% endif %}
+
+      <small class="cart__graph">
+        <small class="cart__graph-dot cart__graph-dot--1"></small>
+        <small class="cart__graph-dot cart__graph-dot--2"></small>
+        <small class="cart__graph-dot cart__graph-dot--3"></small>
+        <small class="cart__graph-dot cart__graph-dot--4"></small>
+        <small class="cart__graph-dot cart__graph-dot--5"></small>
+        <small class="cart__graph-dot cart__graph-dot--6"></small>
+        
+        <svg height="18" width="18">
+          <circle r="7" cx="9" cy="9" />
+          <circle class="cart__graph-progress" stroke-dasharray="87.96459430051421 87.96459430051421" style="stroke-dashoffset: 87.96459430051421" data-cart-progress data-percent="{{- percent -}}" r="7" cx="9" cy="9" />
+        </svg>
+      </small>
+    {% endif %}
+
+    {% if qualified_shipping_message != blank %}
+      <span class="cart__message-success">{{ qualified_shipping_message }}</span>
+    {% endif %}
+
+    <span class="cart__message-default">
+      {{ free_shipping_message }}
+    </span>
+  </p>
+{% endif %}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              {% endif %}
+              
+              {% if section.settings.layout == 'marquee' %}
+                <div {{ block_attributes }}>
+                  {% assign free_shipping_text = block.settings.message | default: settings.message %}
+{% assign is_enable = false %}
+{% assign show_wheel = true %}
+
+{% if block.settings.show_wheel == false %}
+  {% assign show_wheel = false %}
+{% endif %}
+
+{% if block.settings.message != blank %}
+  {% assign is_enable = true %}
+{% endif %}
+
+{% if settings.show_free_shipping_message and settings.free_shipping_limit != blank and free_shipping_text != blank %}
+  {% assign is_enable = true %}
+{% endif %}
+
+{% if is_enable %}
+  {% assign limit = settings.free_shipping_limit | plus: 0 %}
+  {% assign limit_currency = limit | times: 100 %}
+  {% assign subtotal_without_currency = cart.total_price | plus: 0 | divided_by: 100 %}
+
+  {% capture left_to_spend %}
+    <span data-left-to-spend>{{ limit_currency | minus: cart.total_price | money_without_trailing_zeros }}</span>
+  {% endcapture %}
+
+  {% assign free_shipping_message = free_shipping_text | replace: '{{ amount }}', left_to_spend %}
+  {% assign qualified_shipping_message = 'cart.general.qualified_shipping_message' | t %}
+  {% assign class_message = '' %}
+
+  {% if subtotal_without_currency >= limit %}
+    {% if qualified_shipping_message != blank %}
+      {% assign class_message = 'is-success' %}
+    {% else %}
+      {% assign class_message = 'is-hidden' %}
+    {% endif %}
+  {% elsif subtotal_without_currency == 0 %}
+    {% assign class_message = 'is-hidden' %}
+  {% endif %}
+
+  <p class="cart-dropdown__message cart__message {{ class_message }}" {{ block_attibutes }} data-cart-message="{% if qualified_shipping_message != blank %}true{% else %}false{% endif %}" data-limit="{{ limit }}">
+    {% if show_wheel %}  
+      {% assign percent = limit | minus: subtotal_without_currency | times: 100 | divided_by: limit %}
+      {% assign percent = 100 | minus: percent %}
+
+      {% if percent > 100 %}
+        {% assign percent = 100 %}
+      {% endif %}
+
+      <small class="cart__graph">
+        <small class="cart__graph-dot cart__graph-dot--1"></small>
+        <small class="cart__graph-dot cart__graph-dot--2"></small>
+        <small class="cart__graph-dot cart__graph-dot--3"></small>
+        <small class="cart__graph-dot cart__graph-dot--4"></small>
+        <small class="cart__graph-dot cart__graph-dot--5"></small>
+        <small class="cart__graph-dot cart__graph-dot--6"></small>
+        
+        <svg height="18" width="18">
+          <circle r="7" cx="9" cy="9" />
+          <circle class="cart__graph-progress" stroke-dasharray="87.96459430051421 87.96459430051421" style="stroke-dashoffset: 87.96459430051421" data-cart-progress data-percent="{{- percent -}}" r="7" cx="9" cy="9" />
+        </svg>
+      </small>
+    {% endif %}
+
+    {% if qualified_shipping_message != blank %}
+      <span class="cart__message-success">{{ qualified_shipping_message }}</span>
+    {% endif %}
+
+    <span class="cart__message-default">
+      {{ free_shipping_message }}
+    </span>
+  </p>
+{% endif %}
+                </div>  
+              {% endif %}
+            {% endif %}
+          {% when 'custom' %}
+            {% if block.settings.text != blank %}
+              {% if section.settings.layout == 'slider' %}  
+                <div {{ block_attributes }}>
+                  <div data-ticker-frame class="announcement__message">
+                    <div data-ticker-scale class="ticker--unloaded announcement__scale">
+                      <div data-ticker-text class="announcement__text">
+                        <span>{{ block.settings.text }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              {% endif %}
+            {% endif %}
+
+            {% if section.settings.layout == 'marquee' %}
+              <div {{ block_attributes }}>
+                <span>{{ block.settings.text }}</span>
+              </div>  
+            {% endif %}
+        {% endcase %}
+      {% endcapture %}
+
+      {% if block.settings.enable %}  
+        {% if block.settings.trigger == 'top' %}
+          {% assign position_top = position_top | append: bar_html %}
+        {% endif %}
+
+        {% if block.settings.trigger == 'high' %}
+          {% assign position_high = position_high | append: bar_html %}
+        {% endif %}
+
+        {% if block.settings.trigger == 'low' %}
+          {% assign position_low = position_low | append: bar_html %}
+        {% endif %}
+      {% else %}
+        {% assign position_top = position_top | append: bar_html %}  
+      {% endif %}
+    {% endif %}
+  {% endfor %}
+
+  <div class="announcement__wrapper"
+    data-announcement-wrapper
+    data-section-id="{{ section.id }}"
+    data-section-type="announcement">
+    <div>
+      <div class="announcement__bar announcement__bar--error">
+        <div class="announcement__message">
+          <div class="announcement__text">
+            <span class="announcement__main">{{- 'general.ie11_support_message' | t -}}</span>
+          </div>
+        </div>
+      </div>
+      
+      {% if position_top != '' %}
+        <div class="announcement__bar-outer" data-bar data-bar-top style="--bg: {{ section.settings.bg_color | default: '#fff' }}; --text: {{ section.settings.color }};">
+          {% if section.settings.layout == 'slider' %}
+            <div class="announcement__bar-holder" data-slider data-fade="true" data-dots="hidden" data-draggable="true" data-autoplay="true" data-speed="{{ section.settings.speed | times: 1000 }}">
+              {{ position_top }}
+            </div>
+          {% endif %}
+
+          {% if section.settings.layout == 'marquee' %}
+            <div class="announcement__bar-holder">
+              <div class="announcement__bar">
+                <div data-ticker-frame class="announcement__message">
+                  <div data-ticker-scale class="ticker--unloaded announcement__scale">
+                    <div data-ticker-text class="announcement__text">
+                      {{ position_top }}
+                    </div>
+                  </div>
+                </div>  
+              </div>
+            </div>
+          {% endif %}
+        </div>
+      {% endif %}
+
+      {% if position_high != '' %}
+        <div class="announcement__bar-outer announcement__bar-outer--high" data-bar data-bar-high style="--bg: {{ section.settings.bg_color | default: '#fff' }}; --text: {{ section.settings.color }};">  
+          {% if section.settings.layout == 'slider' %}  
+            <div class="announcement__bar-holder" data-slider data-fade="true" data-dots="hidden" data-draggable="true" data-autoplay="true" data-speed="{{ section.settings.speed | times: 1000 }}">
+              {{ position_high }}
+            </div>
+          {% endif %}
+          
+          {% if section.settings.layout == 'marquee' %}
+            <div class="announcement__bar-holder">
+              <div class="announcement__bar">
+                <div data-ticker-frame class="announcement__message">
+                  <div data-ticker-scale class="ticker--unloaded announcement__scale">
+                    <div data-ticker-text class="announcement__text">
+                      {{ position_high }}
+                    </div>
+                  </div>
+                </div>  
+              </div>
+            </div>
+          {% endif %}
+        </div>
+      {% endif %}
+
+      {% if position_low != '' %}
+        <div class="announcement__bar-outer announcement__bar-outer--low" data-bar data-bar-low style="--bg: {{ section.settings.bg_color | default: '#fff' }}; --text: {{ section.settings.color }};">
+          {% if section.settings.layout == 'slider' %}  
+            <div class="announcement__bar-holder" data-slider data-fade="true" data-dots="hidden" data-draggable="true" data-autoplay="true" data-speed="{{ section.settings.speed | times: 1000 }}">
+              {{ position_low }}
+            </div>
+          {% endif %}
+
+          {% if section.settings.layout == 'marquee' %}
+            <div class="announcement__bar-holder">
+              <div class="announcement__bar">
+                <div data-ticker-frame class="announcement__message">
+                  <div data-ticker-scale class="ticker--unloaded announcement__scale">
+                    <div data-ticker-text class="announcement__text">
+                      {{ position_low }}
+                    </div>
+                  </div>
+                </div>  
+              </div>
+            </div>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Announcement bar",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Colors"
+    },
+    {
+      "type": "color",
+      "id": "bg_color",
+      "label": "Background",
+      "default": "#f7f7f7"
+    },
+    {
+      "type": "color",
+      "id": "color",
+      "label": "Text",
+      "default": "#545454"
+    },
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "select",
+      "id": "layout",
+      "label": "Layout",
+      "options": [
+        {
+          "value": "slider",
+          "label": "Slider"
+        },
+        {
+          "value": "marquee",
+          "label": "Marquee"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "Slider"
+    },
+    {
+      "type": "range",
+      "id": "speed",
+      "label": "Autoplay speed",
+      "unit": "sec",
+      "min": 5,
+      "max": 20,
+      "step": 1,
+      "default": 7
+    }
+  ],
+  "blocks" : [
+    {
+      "type": "text",
+      "name": "Text announcement",
+      "settings": [
+        {
+          "type": "richtext",
+          "id": "text",
+          "label": "Text",
+          "default": "<p><strong>Make an announcement</strong> | More info</p>"
+        },
+        {
+          "type": "header",
+          "content": "Behavior"
+        },
+        {
+          "type": "checkbox",
+          "id": "enable",
+          "label": "Enable",
+          "default": true
+        },
+        {
+          "type": "select",
+          "id": "trigger",
+          "label": "Position",
+          "default": "top",
+          "options": [
+            {"value": "top", "label": "Above header"},
+            {"value": "high", "label": "Below header"},
+            {"value": "low", "label": "Below first section"}
+          ]
+        },
+        {
+          "type": "header",
+          "content": "Target page"
+        },
+        {
+          "id": "target_url_enabled",
+          "type": "checkbox",
+          "label": "Limit to specific page"
+        },
+        {
+          "id": "target_url",
+          "type": "url",
+          "label": "Targeted page"
+        },
+        {
+          "type": "header",
+          "content": "Target referrer"
+        },
+        {
+          "id": "target_referrer_enabled",
+          "type": "checkbox",
+          "label": "Limit to specific referrer path"
+        },
+        {
+          "id": "target_referrer",
+          "type": "text",
+          "label": "Targeted referrer"
+        },
+        {
+          "type": "header",
+          "content": "Target device"
+        },
+        {
+          "id": "target_device_enabled",
+          "type": "checkbox",
+          "label": "Limit to desktop or mobile"
+        },
+        {
+          "type": "select",
+          "id": "target_device",
+          "label": "Device ",
+          "default": "mobile",
+          "options": [
+            {"value": "mobile", "label": "Only show on mobile"},
+            {"value": "desktop", "label": "Only show on desktop"}
+          ]
+        }
+      ]
+    },
+    {
+      "type": "message",
+      "name": "Free shipping message",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "checkbox",
+          "id": "show_wheel",
+          "label": "Show progress wheel",
+          "default": true
+        },
+        {
+          "type": "textarea",
+          "id": "message",
+          "label": "Message",
+          "info": "Use {{ amount }} to display progress towards free shipping.",
+          "default": "Spend {{ amount }} more for free shipping."
+        },
+        {
+          "type": "paragraph",
+          "content": "Navigate to Theme settings -> \"Cart -> Free shipping message\" to set the amount."
+        },
+        {
+          "type": "header",
+          "content": "Behavior"
+        },
+        {
+          "type": "checkbox",
+          "id": "enable",
+          "label": "Enable",
+          "default": true
+        },
+        {
+          "type": "select",
+          "id": "trigger",
+          "label": "Position",
+          "default": "top",
+          "options": [
+            {"value": "top", "label": "Above header"},
+            {"value": "high", "label": "Below header"},
+            {"value": "low", "label": "Below first section"}
+          ]
+        },
+        {
+          "type": "header",
+          "content": "Target page"
+        },
+        {
+          "id": "target_url_enabled",
+          "type": "checkbox",
+          "label": "Limit to specific page"
+        },
+        {
+          "id": "target_url",
+          "type": "url",
+          "label": "Targeted page"
+        },
+        {
+          "type": "header",
+          "content": "Target referrer"
+        },
+        {
+          "id": "target_referrer_enabled",
+          "type": "checkbox",
+          "label": "Limit to specific referrer path"
+        },
+        {
+          "id": "target_referrer",
+          "type": "text",
+          "label": "Targeted referrer"
+        },
+        {
+          "type": "header",
+          "content": "Target device"
+        },
+        {
+          "id": "target_device_enabled",
+          "type": "checkbox",
+          "label": "Limit to desktop or mobile"
+        },
+        {
+          "type": "select",
+          "id": "target_device",
+          "label": "Device ",
+          "default": "mobile",
+          "options": [
+            {"value": "mobile", "label": "Only show on mobile"},
+            {"value": "desktop", "label": "Only show on desktop"}
+          ]
+        }
+      ]
+    },
+    {
+      "type": "custom",
+      "name": "Custom HTML",
+      "settings": [
+        {
+          "type": "html",
+          "id": "text",
+          "label": "Text",
+          "default": "<p>Custom HTML</p>"
+        },
+        {
+          "type": "header",
+          "content": "Behavior"
+        },
+        {
+          "type": "checkbox",
+          "id": "enable",
+          "label": "Enable",
+          "default": true
+        },
+        {
+          "type": "select",
+          "id": "trigger",
+          "label": "Position",
+          "default": "top",
+          "options": [
+            {"value": "top", "label": "Above header"},
+            {"value": "high", "label": "Below header"},
+            {"value": "low", "label": "Below first section"}
+          ]
+        },
+        {
+          "type": "header",
+          "content": "Target page"
+        },
+        {
+          "id": "target_url_enabled",
+          "type": "checkbox",
+          "label": "Limit to specific page"
+        },
+        {
+          "id": "target_url",
+          "type": "url",
+          "label": "Targeted page"
+        },
+        {
+          "type": "header",
+          "content": "Target referrer"
+        },
+        {
+          "id": "target_referrer_enabled",
+          "type": "checkbox",
+          "label": "Limit to specific referrer path"
+        },
+        {
+          "id": "target_referrer",
+          "type": "text",
+          "label": "Targeted referrer"
+        },
+        {
+          "type": "header",
+          "content": "Target device"
+        },
+        {
+          "id": "target_device_enabled",
+          "type": "checkbox",
+          "label": "Limit to desktop or mobile"
+        },
+        {
+          "type": "select",
+          "id": "target_device",
+          "label": "Device ",
+          "default": "mobile",
+          "options": [
+            {"value": "mobile", "label": "Only show on mobile"},
+            {"value": "desktop", "label": "Only show on desktop"}
+          ]
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,19 @@
+<!-- /templates/page.contact.liquid -->
+
+<div class="page-contact-holder">
+  <section class="page page-contact">
+    <h1 class="page__title">{{ page.title }}</h1>
+  
+    {% if page.content != blank %}
+      <div class="rte">
+        {{ page.content }}
+      </div>
+  
+      <div class="hr"></div>
+    {% endif %}
+  </section>
+  
+  {% section 'page-contact-custom' %}
+  
+  {% section 'page-contact' %}
+</div>
